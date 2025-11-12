@@ -44,7 +44,7 @@ Implementation of FedAvg and heterogeneity experiments for EE5102/CS6302.
 
 ## Parallel Execution
 
-✅ **Tasks 2 and 3 are INDEPENDENT** - Run them on different Kaggle notebooks simultaneously!
+**Tasks 2 and 3 are INDEPENDENT** - Run them on different Kaggle notebooks simultaneously!
 
 ## Output Files
 
