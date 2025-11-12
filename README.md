@@ -57,7 +57,7 @@ Results saved to `logs/`:
 Default settings in `config.py`:
 - Clients: 5
 - Rounds: 50
-- Batch size: 64 (adjust based on GPU)
+- Batch size: 128
 - Seed: 42
 
 ## Notes
