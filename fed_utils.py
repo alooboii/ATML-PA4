@@ -114,9 +114,14 @@ def aggregate_models(global_model, client_models, client_weights):
     # Get global model state dict
     global_state = global_model.state_dict()
 
-    # Initialize aggregated state with zeros
+    # Get device from first client model
+    device = next(client_models[0].parameters()).device
+
+    # Initialize aggregated state with zeros ON THE SAME DEVICE
     for key in global_state.keys():
-        global_state[key] = torch.zeros_like(global_state[key], dtype=torch.float32)
+        global_state[key] = torch.zeros_like(global_state[key], dtype=torch.float32).to(
+            device
+        )
 
     # Weighted sum of client model parameters
     for client_model, weight in zip(client_models, weights):
@@ -124,8 +129,9 @@ def aggregate_models(global_model, client_models, client_weights):
         for key in global_state.keys():
             global_state[key] += client_state[key].float() * weight
 
-    # Update global model
+    # Update global model and move to same device
     global_model.load_state_dict(global_state)
+    global_model.to(device)
 
     return global_model
 
