@@ -16,8 +16,8 @@ CONFIG = {
     'momentum': 0.9,
     'weight_decay': 1e-4,
     'lr_schedule': None,
-    'local_batch_size': 64,  # Adjust for P100: 32/64/128
-    'test_batch_size': 128,
+    'local_batch_size': 128,  
+    'test_batch_size': 256,
     'random_seed': 42,
     
     # ========== FEDERATED LEARNING SETUP ==========
