@@ -95,6 +95,45 @@ def evaluate_model(model, test_loader, device):
     return accuracy, avg_loss
 
 
+def evaluate_client_local(model, loader, device):
+    """
+    Evaluate model on client's local training data
+
+    Args:
+        model: PyTorch model
+        loader: Client's training data loader
+        device: Device to evaluate on
+
+    Returns:
+        accuracy: Training accuracy (0-1)
+        loss: Training loss
+    """
+    model.eval()
+    model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+
+    correct = 0
+    total = 0
+    total_loss = 0.0
+
+    with torch.no_grad():
+        for data, target in loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            loss = criterion(output, target)
+
+            total_loss += loss.item() * data.size(0)
+            _, predicted = output.max(1)
+            total += target.size(0)
+            correct += predicted.eq(target).sum().item()
+
+    accuracy = correct / total
+    avg_loss = total_loss / total
+
+    return accuracy, avg_loss
+
+
 def aggregate_models(global_model, client_models, client_weights):
     """
     Aggregate client models using weighted averaging
@@ -202,6 +241,13 @@ def federated_averaging(
         "test_loss": [],
         "train_time": [],
         "weight_divergence": [],
+        # NEW: Per-client metrics for Task 3 analysis
+        "per_client_train_acc": [],
+        "per_client_train_loss": [],
+        "per_client_test_acc": [],
+        "per_client_test_loss": [],
+        "selected_clients": [],
+        "client_data_sizes": [len(loader.dataset) for loader in client_loaders],
     }
 
     print(f"\nStarting FedAvg:")
@@ -220,6 +266,13 @@ def federated_averaging(
         client_models = []
         client_weights = []
 
+        # NEW: Per-client metric storage for this round
+        # Initialize with None for all clients (will fill only for selected)
+        round_per_client_train_acc = [None] * num_clients
+        round_per_client_train_loss = [None] * num_clients
+        round_per_client_test_acc = [None] * num_clients
+        round_per_client_test_loss = [None] * num_clients
+
         # Local training on selected clients
         for client_id in selected_clients:
             # Copy global model to client
@@ -229,6 +282,18 @@ def federated_averaging(
             client_model, _ = train_local(
                 client_model, client_loaders[client_id], local_epochs, lr, device
             )
+
+            # NEW: Evaluate client model on its OWN training data
+            train_acc, train_loss = evaluate_client_local(
+                client_model, client_loaders[client_id], device
+            )
+            round_per_client_train_acc[client_id] = train_acc
+            round_per_client_train_loss[client_id] = train_loss
+
+            # NEW: Evaluate client model on GLOBAL test set
+            test_acc, test_loss = evaluate_model(client_model, test_loader, device)
+            round_per_client_test_acc[client_id] = test_acc
+            round_per_client_test_loss[client_id] = test_loss
 
             client_models.append(client_model)
             client_weights.append(len(client_loaders[client_id].dataset))
@@ -250,6 +315,13 @@ def federated_averaging(
         results["test_loss"].append(test_loss)
         results["train_time"].append(round_time)
         results["weight_divergence"].append(weight_div)
+
+        # NEW: Log per-client metrics
+        results["per_client_train_acc"].append(round_per_client_train_acc)
+        results["per_client_train_loss"].append(round_per_client_train_loss)
+        results["per_client_test_acc"].append(round_per_client_test_acc)
+        results["per_client_test_loss"].append(round_per_client_test_loss)
+        results["selected_clients"].append(selected_clients.tolist())
 
         # Print progress
         print(

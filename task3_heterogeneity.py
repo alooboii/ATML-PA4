@@ -45,6 +45,13 @@ def save_results(results, args, filename):
             "test_loss": results["test_loss"],
             "train_time": results["train_time"],
             "weight_divergence": results["weight_divergence"],
+            # NEW: Per-client metrics
+            "per_client_train_acc": results.get("per_client_train_acc", []),
+            "per_client_train_loss": results.get("per_client_train_loss", []),
+            "per_client_test_acc": results.get("per_client_test_acc", []),
+            "per_client_test_loss": results.get("per_client_test_loss", []),
+            "selected_clients": results.get("selected_clients", []),
+            "client_data_sizes": results.get("client_data_sizes", []),
         },
         "summary": {
             "final_test_accuracy": results["test_accuracy"][-1],
